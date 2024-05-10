@@ -21,13 +21,13 @@
 
 using namespace std;
 
-#define CH347JTAG_VID 0x1a86
-#define CH347T_JTAG_PID 0x55dd    //ch347T
-#define CH347F_JTAG_PID 0x55de    //ch347F
-
 #define KHZ(n) (uint32_t)((n)*UINT32_C(1000))
 #define MHZ(n) (uint32_t)((n)*UINT32_C(1000000))
 #define GHZ(n) (uint32_t)((n)*UINT32_C(1000000000))
+
+#define CH347JTAG_VID 0x1a86
+#define CH347T_JTAG_PID 0x55dd    //ch347T
+#define CH347F_JTAG_PID 0x55de    //ch347F
 
 #define CH347JTAG_INTF        2
 #define CH347JTAG_WRITE_EP    0x06
@@ -49,15 +49,72 @@ enum CH347JtagSig {
 	SIG_TDI =   0b10000,
 };
 
-// defer should only be used with rlen == 0
+static void LIBUSB_CALL sync_cb(struct libusb_transfer *transfer) {
+	int *complete = (int *)transfer->user_data;
+	*complete = 1;
+}
 
-int CH347Jtag::usb_xfer(unsigned wlen, unsigned rlen, unsigned *ract, bool defer) 
-{
+#ifdef _WIN32
+#include <windows.h>
+
+typedef int(__stdcall  * pCH347OpenDevice)(unsigned long iIndex);
+
+typedef int(__stdcall * pCH347CloseDevice)(unsigned long iIndex);
+
+typedef unsigned long(__stdcall * pCH347SetTimeout)(
+	unsigned long iIndex,        /* Specify equipment serial number */
+	unsigned long iWriteTimeout, /* Specifies the timeout period for USB
+					write out data blocks, in milliseconds
+					mS, and 0xFFFFFFFF specifies no timeout
+					(default) */
+	unsigned long iReadTimeout); /* Specifies the timeout period for USB
+					reading data blocks, in milliseconds mS,
+					and 0xFFFFFFFF specifies no timeout
+					(default) */
+
+typedef unsigned long(__stdcall * pCH347WriteData)(
+	unsigned long iIndex,         /* Specify equipment serial number */
+	void *oBuffer,                /* Point to a buffer large enough to hold
+					 the descriptor */
+	unsigned long *ioLength);     /* Pointing to the length unit, the input
+					 is the length to be read, and the
+					 return is the actual read length */
+
+typedef unsigned long(__stdcall * pCH347ReadData)(
+	unsigned long iIndex,          /* Specify equipment serial number */
+	void *oBuffer,                 /* Point to a buffer large enough to
+					  hold the descriptor */
+	unsigned long *ioLength);      /* Pointing to the length unit, the input
+					  is the length to be read, and the
+					  return is the actual read length */
+
+typedef unsigned long(__stdcall * pCH347Jtag_INIT)(
+	unsigned long iIndex,         /* Specify equipment serial number */
+	unsigned char iClockRate);    /* Pointing to the length unit, the input
+					 is the length to be read, and the
+					 return is the actual read length */
+HMODULE uhModule = 0;
+BOOL ugOpen = false;
+unsigned long ugIndex = 0;
+int DevIsOpened = -1;
+pCH347OpenDevice CH347OpenDevice;
+pCH347CloseDevice CH347CloseDevice;
+pCH347SetTimeout CH347SetTimeout;
+pCH347ReadData CH347ReadData;
+pCH347WriteData CH347WriteData;
+#endif
+
+// defer should only be used with rlen == 0
+int CH347Jtag::usb_xfer(unsigned wlen, unsigned rlen, unsigned *ract, bool defer) {
+#ifdef _WIN32
+	unsigned long actual_length = 0;
+#elif defined(__linux__)
 	int actual_length = 0;
+#endif
 	if (_verbose) {
 		fprintf(stderr, "usb_xfer: deferred: %ld\n", obuf - _obuf);
 	}
-	if (defer && !rlen && obuf - _obuf + wlen < (MAX_BUFFER - 12)) {
+	if (defer && !rlen && obuf - _obuf > (wlen + 12)) {
 		obuf += wlen;
 		return 0;
 	}
@@ -86,9 +143,17 @@ int CH347Jtag::usb_xfer(unsigned wlen, unsigned rlen, unsigned *ract, bool defer
 
 	int r = 0;
 	if (wlen) {
+#ifdef _WIN32
+		actual_length = wlen;
+		if (!CH347WriteData(ugIndex, obuf, &actual_length) || actual_length != wlen) {
+			std::cout << "write fail." << std::endl;
+			return -1;
+		}
+#elif defined(__linux__)
 		if ((r = libusb_bulk_transfer(dev_handle, CH347JTAG_WRITE_EP, obuf, wlen, &actual_length, CH347JTAG_TIMEOUT)) < 0 ) {
 			return r;
 		}
+#endif
 	}
 	if (_verbose) {
 		fprintf(stderr, "obuf[%d] = {", wlen);
@@ -102,9 +167,17 @@ int CH347Jtag::usb_xfer(unsigned wlen, unsigned rlen, unsigned *ract, bool defer
 	uint8_t *pibuf = ibuf;
 	if (rlen){
 		while (rlen) {
+#ifdef _WIN32
+			actual_length = rlen;
+			if (!CH347ReadData(ugIndex, pibuf, &actual_length)){
+				std::cout << "read fail." << std::endl;
+				return -1;
+			}
+#elif defined(__linux__)
 			if ((r = libusb_bulk_transfer(dev_handle, CH347JTAG_READ_EP, pibuf, rlen, &actual_length, CH347JTAG_TIMEOUT)) < 0 ) {
 				return r;
 			}
+#endif
 			if (_verbose) {
 				fprintf(stderr, "ibuf[%d] = {", actual_length);
 				for (int i = rlen_total; i < rlen_total + actual_length; ++i) {
@@ -136,6 +209,57 @@ int CH347Jtag::setClk(const uint8_t &factor) {
 		return -1;
 	return 0;
 }
+
+#ifdef _WIN32
+CH347Jtag::CH347Jtag(uint32_t clkHZ, int8_t verbose, int vid, int pid, uint8_t bus_addr, uint8_t dev_addr):
+      _verbose(verbose>1), dev_handle(NULL), usb_ctx(NULL), obuf(_obuf)
+{
+	if (uhModule == 0) {
+		uhModule = LoadLibrary("CH347DLLA64.DLL");
+		if (uhModule) {
+			CH347OpenDevice = (pCH347OpenDevice)GetProcAddress(
+				uhModule, "CH347OpenDevice");
+			CH347CloseDevice = (pCH347CloseDevice)GetProcAddress(
+				uhModule, "CH347CloseDevice");
+			CH347ReadData = (pCH347ReadData)GetProcAddress(
+				uhModule, "CH347ReadData");
+			CH347WriteData = (pCH347WriteData)GetProcAddress(
+				uhModule, "CH347WriteData");
+			CH347SetTimeout = (pCH347SetTimeout)GetProcAddress(
+				uhModule, "CH347SetTimeout");
+			if (CH347OpenDevice == NULL || CH347CloseDevice == NULL
+			    || CH347SetTimeout == NULL || CH347ReadData == NULL
+			    || CH347WriteData == NULL) {
+				printError("Jtag_init error");
+				goto err_exit;
+			}
+		}
+	}
+	for(ugIndex = 0; ugIndex < 16; ++ugIndex){
+		DevIsOpened = CH347OpenDevice(ugIndex);
+		if (DevIsOpened == -1) {
+			printError("CH347 Open Error.");
+			goto err_exit;
+		}else{
+			printInfo("CH347 Open Success.");
+			break;
+		}
+	}
+	_setClkFreq(clkHZ);
+	return;
+err_exit:
+	throw std::exception();
+}
+
+CH347Jtag::~CH347Jtag()
+{
+	if (DevIsOpened) {
+		CH347CloseDevice(ugIndex);
+		printInfo("Close the CH347.");
+		DevIsOpened = false;
+	}
+}
+#elif defined(__linux__)
 
 CH347Jtag::CH347Jtag(uint32_t clkHZ, int8_t verbose, int vid, int pid, uint8_t bus_addr, uint8_t dev_addr):
       _verbose(verbose>1), dev_handle(NULL), usb_ctx(NULL), obuf(_obuf)
@@ -230,10 +354,11 @@ CH347Jtag::~CH347Jtag()
 		usb_ctx = 0;
 	}
 }
+#endif
 
 int CH347Jtag::_setClkFreq(uint32_t clkHZ)
 {
-    int setClk_index = 0;
+	int setClk_index = 0;
 	uint32_t speed_clock_larger_pack[8] = {
 		KHZ(468.75), KHZ(937.5), MHZ(1.875), MHZ(3.75),
 		MHZ(7.5), MHZ(15), MHZ(30), MHZ(60)
@@ -262,10 +387,10 @@ int CH347Jtag::_setClkFreq(uint32_t clkHZ)
 int CH347Jtag::writeTMS(const uint8_t *tms, uint32_t len, bool flush_buffer,
 		__attribute__((unused)) const uint8_t tdi)
 {
+	flush();
 	// if (get_obuf_length() < (int)(len * 2 + 4)) { // check if there is enough room left
 	// 	flush();
 	// }
- 	flush();
 	uint8_t *ptr = obuf;
 	for (uint32_t i = 0; i < len; ++i) {
 		if (ptr == obuf) {
@@ -273,6 +398,9 @@ int CH347Jtag::writeTMS(const uint8_t *tms, uint32_t len, bool flush_buffer,
 			ptr += 2;  // leave place for length;
 		}
 		uint8_t x = ((tms[i >> 3] & (1 << (i & 7))) ? SIG_TMS : 0);
+		if (tdi){
+			x |= SIG_TDI;
+		}
 		*ptr++ = x;
 		*ptr++ = x | SIG_TCK;
 		int wlen = ptr - obuf;
@@ -334,8 +462,9 @@ int CH347Jtag::toggleClk(uint8_t tms, uint8_t tdi, uint32_t len)
 
 int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 {
-	if (len == 0)
+	if (len == 0){
 		return 0;
+	}
 	unsigned bytes = (len - (end ? 1 : 0)) / 8;
 	unsigned bits = len - bytes * 8;
 	uint8_t *rptr = rx;
@@ -345,6 +474,9 @@ int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 	while (tptr < txend) {
 		if (get_obuf_length() < 4) {
 			flush();
+			if (!isFull() || obuf != _obuf) {
+				cerr << "flush fail" << endl;
+			}
 		}
 		int avail = get_obuf_length() - 3;
 		int chunk = (txend - tptr < avail)? txend - tptr: avail;
@@ -356,8 +488,8 @@ int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 		tptr += chunk;
 		// write header
 		obuf[0] = cmd;
-		obuf[1] = chunk;
-		obuf[2] = chunk >> 8;
+		obuf[1] = (chunk >> 0) & 0xff;
+		obuf[2] = (chunk >> 8) & 0xff;
 		unsigned actual_length = 0;
 		int ret = usb_xfer(chunk + 3, (rx) ? chunk + 3 : 0, &actual_length, rx == 0 && get_obuf_length());
 		if (ret < 0) {
@@ -367,6 +499,9 @@ int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 		}
 		if (!rx)
 			continue;
+		if (ibuf[0] != CMD_BYTES_WR){
+			std::cout << "ibuf[0] != CMD_BYTES_WR" << std::endl;
+		}
 		unsigned size = ibuf[1] + ibuf[2] * 0x100;
 		if (ibuf[0] != CMD_BYTES_WR || actual_length - 3 != size) {
 			cerr << "writeTDI: invalid read data: " << ret << endl;
@@ -389,7 +524,7 @@ int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 		uint8_t txb = (tx) ? bptr[i >> 3] : 0;
 		uint8_t _tdi = (txb & (1 << (i & 7))) ? SIG_TDI : 0;
 		x = _tdi;
-		if (end && i == bits - 1) {
+		if (i == bits - 1) {
 			x |= SIG_TMS;
 		}
 		*ptr++ = x;
@@ -411,7 +546,6 @@ int CH347Jtag::writeTDI(const uint8_t *tx, uint8_t *rx, uint32_t len, bool end)
 		return EXIT_SUCCESS;
 
 	unsigned size = ibuf[1] + ibuf[2] * 0x100;
-
 	if (ibuf[0] != CMD_BITS_WR || actual_length - 3 != size) {
 		cerr << "writeTDI: invalid read data: " << endl;
 		return -EXIT_FAILURE;
