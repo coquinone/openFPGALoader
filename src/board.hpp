@@ -126,6 +126,7 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("basys3",          "xc7a35tcpg236",  "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("c5g",             "", "usb-blaster",0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("cmod_s7",         "xc7s25csga225",  "digilent", 0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("cmoda7_15t",      "xc7a15tcpg236",  "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("cmoda7_35t",      "xc7a35tcpg236",  "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("colorlight",      "", "",           0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("colorlight-i5",   "", "cmsisdap", 0, 0, CABLE_DEFAULT),
@@ -185,6 +186,7 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("nexys_a7_50",     "xc7a50tcsg324",  "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("nexys_a7_100",    "xc7a100tcsg324", "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("nexysVideo",      "xc7a200tsbg484", "digilent_b", 0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("olimex_gatemateevb", "GM1A1", "dirtyJtag", 0, 0, CABLE_DEFAULT),
 	DFU_BOARD("orangeCrab",       "", "dfu", 0x1209, 0x5af0, 0),
 	DFU_BOARD("orbtrace_dfu",     "", "dfu", 0x1209, 0x3442, 1),
 	JTAG_BOARD("papilio_one",     "xc3s500evq100", "papilio", 0, 0, CABLE_DEFAULT),
@@ -192,6 +194,7 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("pynq_z1",         "xc7z020clg400",  "ft2232", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("pynq_z2",         "xc7z020clg400",  "ft2232", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("qmtechCyclone10", "10cl016484", "",  0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("qmtechCycloneIVGX", "ep4cgx15027", "",  0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("qmtechCycloneIV", "ep4ce1523", "",  0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("qmtechCycloneV",  "5ce223", "",     0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("qmtechCycloneV_5ce523",  "5ce523", "",	0,0, CABLE_DEFAULT),
@@ -199,6 +202,7 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("redpitaya14",     "xc7z010clg400", "", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("runber",          "", "ft232",      0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("spartanEdgeAccelBoard", "", "",0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("spec45",          "xc6slx45tfgg484",  "", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("spec150",         "xc6slx150tfgg484", "", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("stlv7325",        "xc7k325tffg676", "ft4232", 0, 0, CABLE_MHZ(3)),
 	JTAG_BOARD("tangnano",        "", "ch552_jtag", 0, 0, CABLE_DEFAULT),
@@ -209,7 +213,9 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("tangprimer20k",   "", "ft2232",     0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("tangprimer25k",   "", "ft2232",     0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("tangmega138k",    "", "ft2232",     0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("te0712_8",      "xc7a200tfbg484", "",     0, 0, CABLE_MHZ(15)),
 	JTAG_BOARD("tec0117",         "", "ft2232",     0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("tec0330",         "xc7vx330tffg1157", "",     0, 0, CABLE_MHZ(15)),
 	SPI_BOARD("titanium_ti60_f225","efinix", "efinix_spi_ft4232",
 			DBUS4, DBUS5, DBUS7, DBUS3, DBUS0, DBUS1, DBUS2, DBUS6, 0, CABLE_DEFAULT),
 	JTAG_BOARD("titanium_ti60_f225_jtag", "ti60f225","efinix_jtag_ft4232",  0, 0, CABLE_DEFAULT),
@@ -224,6 +230,7 @@ static std::map <std::string, target_board_t> board_list = {
 	DFU_BOARD("ulx3s_dfu",        "", "dfu", 0x1d50, 0x614b, 0),
 	JTAG_BOARD("usrpx300",        "xc7k325tffg900", "digilent", 0, 0, CABLE_MHZ(15)),
 	JTAG_BOARD("usrpx310",        "xc7k410tffg900", "digilent", 0, 0, CABLE_MHZ(15)),
+	JTAG_BOARD("vec_v6",          "xc6vlx130tff784", "ft2232", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("vcu118",          "xcvu9p-flga2104", "jtag-smt2-nc", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("vcu128",          "xcvu37p-fsvh2892", "ft4232", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("vcu1525",         "xcvu9p-fsgd2104",  "ft4232", 0, 0, CABLE_MHZ(15)),
@@ -239,7 +246,8 @@ static std::map <std::string, target_board_t> board_list = {
 	JTAG_BOARD("zedboard",        "xc7z020clg484", "digilent_hs2", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("zybo_z7_10",      "xc7z010clg400",  "digilent", 0, 0, CABLE_DEFAULT),
 	JTAG_BOARD("zybo_z7_20",      "xc7z020clg400",  "digilent", 0, 0, CABLE_DEFAULT),
-	JTAG_BOARD("mini_itx",        "xc7z100ffg900", "jtag-smt2-nc", 0, 0, CABLE_DEFAULT)
+	JTAG_BOARD("mini_itx",        "xc7z100ffg900", "jtag-smt2-nc", 0, 0, CABLE_DEFAULT),
+	JTAG_BOARD("vmm3",            "xc7s50csga324", "ft2232", 0, 0, CABLE_DEFAULT)
 };
 
 #endif

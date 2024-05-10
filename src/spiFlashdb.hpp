@@ -86,6 +86,19 @@ static std::map <uint32_t, flash_t> flash_list = {
 		.bp_len = 3,
 		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), 0}}
 	},
+	{0x016018, {
+		.manufacturer = "spansion",
+		.model = "S25FL128L",
+		.nr_sector = 256,
+		.sector_erase = true,
+		.subsector_erase = false,
+		.has_extended = true,
+		.tb_otp = false,
+		.tb_offset = (1 << 6),
+		.tb_register = STATR,
+		.bp_len = 4,
+		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), (1 << 5)}}
+	},
 	{0x016019, {
 		.manufacturer = "spansion",
 		.model = "S25FL256L",
@@ -104,6 +117,20 @@ static std::map <uint32_t, flash_t> flash_list = {
 		.manufacturer = "ST",
 		.model = "M25P16",
 		.nr_sector = 32,
+		.sector_erase = true,
+		.subsector_erase = false,
+		.has_extended = false,
+		.tb_otp = true,
+		.tb_offset = 0, // unused
+		.tb_register = STATR,
+		.bp_len = 3,
+		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), 0}}
+	},
+	/* https://pdf1.alldatasheet.com/datasheet-pdf/download/104949/STMICROELECTRONICS/M25P32.html */
+	{0x00202016, {
+		.manufacturer = "ST",
+		.model = "M25P32",
+		.nr_sector = 64,
 		.sector_erase = true,
 		.subsector_erase = false,
 		.has_extended = false,
@@ -172,6 +199,19 @@ static std::map <uint32_t, flash_t> flash_list = {
 	{0x0020ba19, {
 		.manufacturer = "micron",
 		.model = "N25Q256",
+		.nr_sector = 512,
+		.sector_erase = true,
+		.subsector_erase = true,
+		.has_extended = true,
+		.tb_otp = false,
+		.tb_offset = (1 << 5),
+		.tb_register = STATR,
+		.bp_len = 4,
+		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), (1 << 6)}}
+	},
+	{0x0020bb19, {
+		.manufacturer = "micron",
+		.model = "N25Q256A",
 		.nr_sector = 512,
 		.sector_erase = true,
 		.subsector_erase = true,
@@ -328,6 +368,20 @@ static std::map <uint32_t, flash_t> flash_list = {
 		.bp_len = 5,
 		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), (1 << 5)}}
 	},
+	{0xc22817, {
+	/* https://www.macronix.com/Lists/Datasheet/Attachments/8868/MX25R6435F,%20Wide%20Range,%2064Mb,%20v1.6.pdf */
+		.manufacturer = "Macronix",
+		.model = "MX25R6435F",
+		.nr_sector = 128,
+		.sector_erase = true,
+		.subsector_erase = true,
+		.has_extended = false,
+		.tb_otp = true,
+		.tb_offset = (1 << 3),
+		.tb_register = CONFR,
+		.bp_len = 4,
+		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), (1 << 5)}}
+	},
 	{0xef4014, {
 	/* https://cdn-shop.adafruit.com/datasheets/W25Q80BV.pdf */
 		.manufacturer = "Winbond",
@@ -394,6 +448,20 @@ static std::map <uint32_t, flash_t> flash_list = {
 		.bp_len = 3,
 		.bp_offset = {(1 << 2), (1 << 3), (1 << 4), 0}}
 	},
+        {0xba6015, {
+                .manufacturer = "Zetta",
+                .model = "ZD25WQ16CSIGT",
+                .nr_sector = 32,
+                .sector_erase = true,
+                .subsector_erase = true,
+                .has_extended = false,
+                .tb_otp = false,
+                .tb_offset = (1 << 5),
+                .tb_register = STATR,
+                .bp_len = 3,
+                .bp_offset = {(1 << 2), (1 << 3), (1 << 4), 0}}
+        },
+
 };
 
 #endif  // SRC_SPIFLASHDB_HPP_

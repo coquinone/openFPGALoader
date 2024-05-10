@@ -35,6 +35,9 @@ elif subpart[0:2] == '5c':
 elif subpart == "xc7a":
     family = "Artix"
     tool = "vivado"
+elif subpart == "xc7v":
+    family = "Virtex 7"
+    tool = "vivado"
 elif subpart == "xc7k":
     device_size = int(part.split('k')[1].split('t')[0])
     if device_size <= 160:
@@ -55,6 +58,10 @@ elif subpart == "xc3s":
     family = "Spartan3E"
     tool = "ise"
     speed = -4
+elif subpart == "xc6v":
+    family = "Virtex6"
+    tool = "ise"
+    speed = -1
 elif subpart in ["xcvu", "xcku"]:
     family = "Xilinx UltraScale"
     tool = "vivado"
@@ -70,9 +77,12 @@ if tool in ["ise", "vivado"]:
         "xc6slx16ftg256"   : "xc6s_ftg256",
         "xc6slx16csg324"   : "xc6s_csg324",
         "xc6slx45csg324"   : "xc6s_csg324",
+        "xc6slx45tfgg484"  : "xc6s_t_fgg484",
         "xc6slx100fgg484"  : "xc6s_fgg484",
         "xc6slx150tcsg484" : "xc6s_csg484",
-        "xc6slx150tfgg484" : "xc6s_fgg484",
+        "xc6slx150tfgg484" : "xc6s_t_fgg484",
+        "xc6vlx130tff784"  : "xc6v_ff784",
+        "xc7a15tcpg236"    : "xc7a_cpg236",
         "xc7a25tcpg238"    : "xc7a_cpg238",
         "xc7a25tcsg325"    : "xc7a_csg325",
         "xc7a35tcpg236"    : "xc7a_cpg236",
@@ -94,6 +104,7 @@ if tool in ["ise", "vivado"]:
         "xc7k325tffg676"   : "xc7k_ffg676",
         "xc7k325tffg900"   : "xc7k_ffg900",
         "xc7k420tffg901"   : "xc7k_ffg901",
+        "xc7vx330tffg1157" : "xc7v_ffg1157",
         "xc7s25csga225"    : "xc7s_csga225",
         "xc7s25csga324"    : "xc7s_csga324",
         "xc7s50csga324"    : "xc7s_csga324",
@@ -112,9 +123,11 @@ if tool in ["ise", "vivado"]:
                             "xc6slx16ftg256":   "xc6slx16",
                             "xc6slx16csg324":   "xc6slx16",
                             "xc6slx45csg324":   "xc6slx45",
+                            "xc6slx45tfgg484":  "xc6slx45t",
                             "xc6slx100fgg484":  "xc6slx100",
                             "xc6slx150tcsg484": "xc6slx150t",
                             "xc6slx150tfgg484": "xc6slx150t",
+                            "xc6vlx130tff784":  "xc6vlx130t",
                             "xc7k325tffg676":   "xc7k325t",
                             "xc7k325tffg900":   "xc7k325t",
                             "xc7k420tffg901":   "xc7k420t",
@@ -126,9 +139,11 @@ if tool in ["ise", "vivado"]:
                             "xc6slx16ftg256":   "ftg256",
                             "xc6slx16csg324":   "csg324",
                             "xc6slx45csg324":   "csg324",
-                            "xc6slx100fgg484":  "fgg384",
+                            "xc6slx45tfgg484":  "fgg484",
+                            "xc6slx100fgg484":  "fgg484",
                             "xc6slx150tcsg484": "csg484",
                             "xc6slx150tfgg484": "fgg484",
+                            "xc6vlx130tff784":  "ff784",
                             "xc7k325tffg676":   "ffg676",
                             "xc7k325tffg900":   "ffg900",
                             "xc7k420tffg901":   "ffg901",
@@ -157,18 +172,21 @@ if tool in ["ise", "vivado"]:
     files.append({'name': cst_file, 'file_type': cst_type})
 else:
     full_part = {
-        "10cl016484": "10CL016YU484C8G",
-        "10cl025256": "10CL025YU256C8G",
-        "10cl055484": "10CL055YU484C8G",
-        "ep4ce11523": "EP4CE115F23C7",
-        "ep4ce2217" : "EP4CE22F17C6",
-        "ep4ce1523" : "EP4CE15F23C8",
-        "5ce223"    : "5CEFA2F23I7",
-        "5ce523"    : "5CEFA5F23I7",
-        "5ce423"    : "5CEBA4F23C8",
-        "5ce927"    : "5CEBA9F27C7",
-        "5cse423"   : "5CSEMA4U23C6",
-        "5cse623"   : "5CSEBA6U23I7"}[part]
+        "10cl016484" : "10CL016YU484C8G",
+        "10cl025256" : "10CL025YU256C8G",
+        "10cl055484" : "10CL055YU484C8G",
+        "ep4cgx15027": "EP4CGX150DF27I7",
+        "ep4ce11523" : "EP4CE115F23C7",
+        "ep4ce2217"  : "EP4CE22F17C6",
+        "ep4ce1523"  : "EP4CE15F23C8",
+        "ep4ce1017"  : "EP4CE10F17C8",
+        "ep4ce622"   : "EP4CE6E22C8",
+        "5ce223"     : "5CEFA2F23I7",
+        "5ce523"     : "5CEFA5F23I7",
+        "5ce423"     : "5CEBA4F23C8",
+        "5ce927"     : "5CEBA9F27C7",
+        "5cse423"    : "5CSEMA4U23C6",
+        "5cse623"    : "5CSEBA6U23I7"}[part]
     files.append({'name': currDir + 'altera_spiOverJtag.v',
                   'file_type': 'verilogSource'})
     files.append({'name': currDir + 'altera_spiOverJtag.sdc',

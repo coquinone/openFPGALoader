@@ -207,6 +207,13 @@
   Memory: OK
   Flash: OK
 
+- ID: cmoda7_15t
+  Description: Digilent CmodA7
+  URL: https://digilent.com/reference/programmable-logic/cmod-a7/start
+  FPGA: Artix xc7a15tcpg236
+  Memory: OK
+  Flash: OK
+
 - ID: cmoda7_35t
   Description: Digilent CmodA7
   URL: https://digilent.com/reference/programmable-logic/cmod-a7/start
@@ -547,6 +554,13 @@
   Memory: OK
   Flash: TBD
 
+- ID: olimex_gatemateevb
+  Description: Olimex CCGMA1 Cologne Chip GateMate FPGA Evaluation Board
+  URL: https://www.olimex.com/Products/FPGA/GateMate/GateMateA1-EVB/open-source-hardware
+  FPGA: Cologne Chip GateMate Series (GM1A1)
+  Memory: OK
+  Flash: NT
+
 - ID: orbtrace_dfu
   Description: ORBTrace mini (dfu mode)
   URL: https://store.zyp.no/product/orbtrace-mini
@@ -660,6 +674,13 @@
   Memory: OK
   Flash: NA
 
+- ID: SPEC45
+  Description: CERN Simple PCIe FMC carrier SPEC
+  URL: https://ohwr.org/project/spec150/wikis/home
+  FPGA: Spartan6 xc6slx45Tfgg484
+  Memory: OK
+  Flash: OK
+
 - ID: SPEC150
   Description: CERN Simple PCIe FMC carrier SPEC
   URL: https://ohwr.org/project/spec150/wikis/home
@@ -729,6 +750,13 @@
   Memory: OK
   Flash: TBD
 
+- ID: te0712_8
+  Description: Trenz Electronic TE0712 FPGA-Module mit AMD Artix™ 7(TE0712)
+  URL: https://shop.trenz-electronic.de/en/TE0712-03-81I36-A-FPGA-Module-with-AMD-Artix-7-XC7A200T-1FBG484I-1-GByte-DDR3-4-x-5-cm
+  FPGA: XC7A200TFBG484
+  Memory: OK
+  Flash: OK
+
 - ID: tec0117
   Description: Trenz Gowin LittleBee (TEC0117)
   URL: https://shop.trenz-electronic.de/en/TEC0117-01-FPGA-Module-with-GOWIN-LittleBee-and-8-MByte-internal-SDRAM
@@ -742,6 +770,13 @@
   FPGA: Trion T20BGA256
   Memory: OK
   Flash: NT
+
+- ID: tec0330
+  Description: PCIe FMC Carrier with Xilinx Virtex-7 FPGA (TEC0330)
+  URL: https://shop.trenz-electronic.de//TEC0330-05-PCIe-FMC-Carrier-with-Xilinx-Virtex-7-FPGA-8-Lane-PCIe-GEN2-SODIMM-SDRAM
+  FPGA: XC7VX330T-2FFG1157C
+  Memory: OK
+  Flash: OK
 
 - ID: trion_t120_bga576
   Description: Efinix Trion T120 BGA576 Dev Kit (SPI mode)
@@ -788,6 +823,13 @@
   URL: https://github.com/emard/had2019-playground
   FPGA: ECP5 LFE5U
   Memory: NA
+  Flash: OK
+
+- ID: vec_v6
+  Description: Xilinx VCU118
+  URL: https://vmm-srs.docs.cern.ch/
+  FPGA: xc6vlx130tff784
+  Memory: OK
   Flash: OK
 
 - ID: vcu118
@@ -897,3 +939,10 @@
   FPGA: zynq7000 xc7z020clg400
   Memory: OK
   Flash: NA
+
+- ID: VMM3
+  Description: CERN board with VMM3
+  URL: https://vmm-srs.docs.cern.ch/
+  FPGA: xc7s50csga324?
+  Memory: OK
+  Flash: OK

@@ -55,7 +55,7 @@ jobs:
           gzip \
           libftdi1-2 \
           libftdi1-dev \
-          libhidapi-hidraw0 \
+          libhidapi-libusb0 \
           libhidapi-dev \
           libudev-dev \
           pkg-config \
@@ -105,7 +105,7 @@ jobs:
 
     - name: '⚙️ Install dependencies'
       run: |
-        brew update
+        #brew update
         brew install --only-dependencies openFPGALoader
 
     - name: '🚧 Build tarball'
@@ -133,7 +133,7 @@ jobs:
         sudo apt update -qq
         sudo apt install -y \
           libftdi1-2 \
-          libhidapi-hidraw0 \
+          libhidapi-libusb0 \
           udev \
           zlib1g
 
@@ -161,7 +161,6 @@ jobs:
       uses: msys2/setup-msys2/matrix@main
       with:
         systems: >-
-          mingw32
           mingw64
           ucrt64
           clang64

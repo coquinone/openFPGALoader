@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 # set the project name
-project(openFPGALoader VERSION "0.11.0" LANGUAGES CXX)
+project(openFPGALoader VERSION "0.12.1" LANGUAGES CXX)
 add_definitions(-DVERSION=\"v${PROJECT_VERSION}\")
 
 option(ENABLE_OPTIM "Enable build with -O3 optimization level" ON)
@@ -48,10 +48,10 @@ if (USE_PKGCONFIG)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(LIBFTDI REQUIRED libftdi1)
 	pkg_check_modules(LIBUSB REQUIRED libusb-1.0)
-	pkg_check_modules(HIDAPI hidapi-hidraw)
-	# if hidraw not found try with libusb
+	pkg_check_modules(HIDAPI hidapi-libusb)
+	# if libusb not found try with hidraw
 	if (NOT HIDAPI_FOUND)
-		pkg_check_modules(HIDAPI hidapi-libusb)
+		pkg_check_modules(HIDAPI hidapi-hidraw)
 	endif()
 	if (NOT HIDAPI_FOUND)
 		pkg_check_modules(HIDAPI hidapi)
@@ -328,7 +328,7 @@ file(GLOB GZ_FILES spiOverJtag/spiOverJtag_*.*.gz)
 list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake/Modules)
 include(FindGZIP)
 
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND GZIP_PRG)
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND GZIP_PRG)
 	set(SPIOVERJTAG_DIR "${CMAKE_CURRENT_SOURCE_DIR}/spiOverJtag")
 	file(GLOB BITS_FILES RELATIVE ${SPIOVERJTAG_DIR} spiOverJtag/spiOverJtag_*.bit)
 	file(GLOB RBF_FILES RELATIVE ${SPIOVERJTAG_DIR} spiOverJtag/spiOverJtag_*.rbf)

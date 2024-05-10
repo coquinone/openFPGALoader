@@ -58,11 +58,15 @@ static std::map <uint32_t, fpga_model> fpga_list = {
 	{0x04002093, {"xilinx", "spartan6", "xc6slx16",        6}},
 	{0x04004093, {"xilinx", "spartan6", "xc6slx25",        6}},
 	{0x04008093, {"xilinx", "spartan6", "xc6slx45",        6}},
+	{0x04028093, {"xilinx", "spartan6", "xc6slx45T",       6}},
 	{0x04011093, {"xilinx", "spartan6", "xc6slx100",       6}},
 	{0x4403d093, {"xilinx", "spartan6", "xc6slx150T",      6}},
 	{0x03620093, {"xilinx", "spartan7", "xc7s15ftgb196-1", 6}},
 	{0x037c4093, {"xilinx", "spartan7", "xc7s25",          6}},
 	{0x0362f093, {"xilinx", "spartan7", "xc7s50",          6}},
+
+	/* Xilinx Virtex6 */
+	{0x8424a093, {"xilinx", "virtex6", "xc6vlx130t", 10}},
 
 	/* Xilinx 7-Series / Artix7 */
 	{0x037c2093, {"xilinx", "artix a7 25t",  "xc7a25",  6}},
@@ -79,6 +83,9 @@ static std::map <uint32_t, fpga_model> fpga_list = {
 	{0x03656093, {"xilinx", "kintex7", "xc7k410t", 6}},
 	{0x23752093, {"xilinx", "kintex7", "xc7k420t", 6}},
 
+	/* Xilinx XC7V */
+	{0x03667093, {"xilinx", "virtex7", "xc7vx330t",  6}},
+
 	/* Xilinx 7-Series / Zynq */
 	{0x03722093, {"xilinx", "zynq",     "xc7z010", 6}},
 	{0x03727093, {"xilinx", "zynq",     "xc7z020", 6}},
@@ -92,6 +99,7 @@ static std::map <uint32_t, fpga_model> fpga_list = {
 	{0x1390d093, {"xilinx", "kintexus", "xcku115", 6}},
 
 	/* Xilinx Ultrascale+ / Artix */
+	{0x04AC2093, {"xilinx", "artixusp", "xcau15p", 6}},
 	{0x04A64093, {"xilinx", "artixusp", "xcau25p", 6}},
 
 	/* Xilinx Ultrascale+ / Kintex */
@@ -158,9 +166,12 @@ static std::map <uint32_t, fpga_model> fpga_list = {
 	/*                             Altera                                     */
 	/**************************************************************************/
 
-	/* Altera Cyclone III/IV/10 LP */
+	/* Altera Cyclone II/III/IV/10 LP */
+        {0x020b10dd, {"altera", "cyclone II", "EP2C5", 10}},
+	{0x020f10dd, {"altera", "cyclone III/IV/10 LP", "EP4CE6/EP4CE10",           10}},
 	{0x020f20dd, {"altera", "cyclone III/IV/10 LP", "EP3C16/EP4CE15/10CL016",   10}},
 	{0x020f70dd, {"altera", "cyclone III/IV/10 LP", "EP3C120/EP4CE115/10CL120", 10}},
+	{0x028040dd, {"altera", "cyclone IV GX", "EP4CGX150", 10}},
 
 	/* Altera Cyclone V */
 	{0x02b010dd, {"altera", "cyclone V",     "5CGX*3",                10}},

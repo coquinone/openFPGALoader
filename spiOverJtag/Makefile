@@ -1,7 +1,9 @@
 XILINX_PARTS := xc3s500evq100 \
 	xc6slx9tqg144 xc6slx9csg324 \
 	xc6slx16ftg256 xc6slx16csg324 xc6slx45csg324 xc6slx100fgg484 \
-	xc6slx150tfgg484 xc6slx150tcsg484 \
+	xc6slx45tfgg484 xc6slx150tfgg484 xc6slx150tcsg484 \
+	xc6vlx130tff784 \
+	xc7a15tcpg236 \
 	xc7a25tcpg238 xc7a25tcsg325 \
 	xc7a35tcpg236 xc7a35tcsg324 xc7a35tftg256 xc7a35tfgg484 \
 	xc7a50tcsg324 xc7a50tfgg484 xc7a50tcpg236 xc7a75tfgg484 \
@@ -13,12 +15,13 @@ XILINX_PARTS := xc3s500evq100 \
 	xc7k325tffg676 xc7k325tffg900 \
 	xc7k420tffg901 \
 	xcku3p-ffva676 \
+	xc7vx330tffg1157 \
 	xcku5p-ffvb676 \
 	xcvu9p-flga2104 xcvu37p-fsvh2892
 XILINX_BIT_FILES := $(addsuffix .bit.gz,$(addprefix spiOverJtag_, $(XILINX_PARTS)))
 
 ALTERA_PARTS := 10cl025256 10cl016484 10cl055484 \
-	ep4ce2217 ep4ce1523 ep4ce11523 5ce223 5ce423 5ce523 5ce927
+	ep4ce622 ep4ce1017 ep4ce2217 ep4ce1523 ep4ce11523 ep4cgx15027 5ce223 5ce423 5ce523 5ce927
 ALTERA_BIT_FILES := $(addsuffix .rbf.gz, $(addprefix spiOverJtag_, $(ALTERA_PARTS)))
 
 BIT_FILES := $(ALTERA_BIT_FILES) $(XILINX_BIT_FILES)
