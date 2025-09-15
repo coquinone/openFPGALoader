@@ -129,14 +129,13 @@ int SPIFlash::sector_erase(int addr)
 
 	uint8_t cmd = (addr <= 0xffffff) ? FLASH_SE : FLASH_4SE;
 
-	tx[len++] = cmd;
 	if (cmd == FLASH_4SE)
 		tx[len++] = static_cast<uint8_t>(0xff & (addr >> 24));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >> 16));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >>  8));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr      ));
 
-	_spi->spi_put(tx, NULL, len);
+	_spi->spi_put(cmd, tx, NULL, len);
 
 	return 0;
 }
@@ -148,14 +147,13 @@ int SPIFlash::block32_erase(int addr)
 
 	uint8_t cmd = (addr <= 0xffffff) ? FLASH_BE32 : FLASH_4BE32;
 
-	tx[len++] = cmd;
 	if (cmd == FLASH_4BE32)
 		tx[len++] = static_cast<uint8_t>(0xff & (addr >> 24));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >> 16));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >>  8));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr      ));
 
-	_spi->spi_put(tx, NULL, len);
+	_spi->spi_put(cmd, tx, NULL, len);
 
 	return 0;
 }
@@ -168,14 +166,13 @@ int SPIFlash::block64_erase(int addr)
 
 	uint8_t cmd = (addr <= 0xffffff) ? FLASH_BE64 : FLASH_4BE64;
 
-	tx[len++] = cmd;
 	if (cmd == FLASH_4BE64)
 		tx[len++] = static_cast<uint8_t>(0xff & (addr >> 24));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >> 16));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr >>  8));
 	tx[len++] = static_cast<uint8_t>(0xff & (addr      ));
 
-	_spi->spi_put(tx, NULL, len);
+	_spi->spi_put(cmd, tx, NULL, len);
 
 	return 0;
 }
@@ -322,7 +319,7 @@ bool SPIFlash::dump(const std::string &filename, const int &base_addr,
 		printSuccess("DONE");
 	}
 
-	ProgressBar progress("Read flash ", len, 50, false);
+	ProgressBar progress("Read flash ", len, 50, _verbose < 0);
 	for (int i = 0; i < len; i += rd_burst) {
 		if (rd_burst + i > len)
 			rd_burst = len - i;
@@ -356,20 +353,21 @@ int SPIFlash::erase_and_prog(int base_addr, const uint8_t *data, int len)
 
 	bool must_relock = false;  // used to relock after write;
 
-	/* microchip SST26VF032B have global lock set
-	 * at powerup. global unlock must be send unconditionally
-	 * with or without block protection
-	 */
-	if (_jedec_id == 0xbf2642bf) {  // microchip SST26VF032B
-		if (!global_unlock())
-			return -1;
-	}
 	/* check Block Protect Bits (hide WIP/WEN bits) */
 	uint8_t status = read_status_reg() & ~0x03;
 	if (_verbose > 0)
 		display_status_reg(status);
 	/* if known chip */
 	if (_flash_model) {
+		/* microchip SST26VF032B/64B have global lock set
+		 * at powerup. global unlock must be send unconditionally
+		 * with or without block protection
+		 */
+		if (_flash_model->global_lock) {
+			if (!global_unlock())
+				return -1;
+		}
+
 		/* check if offset + len fit in flash */
 		if ((unsigned int)(base_addr + len) > (_flash_model->nr_sector * 0x10000)) {
 			printError("flash overflow");
@@ -474,7 +472,7 @@ bool SPIFlash::verify(const int &base_addr, const uint8_t *data,
 	std::string verify_data;
 	verify_data.resize(rd_burst);
 
-	ProgressBar progress("Read flash ", len, 50, false);
+	ProgressBar progress("Reading", len, 50, false);
 	for (int i = 0; i < len; i += rd_burst) {
 		if (rd_burst + i > len)
 			rd_burst = len - i;
@@ -972,7 +970,7 @@ bool SPIFlash::set_quad_bit(bool set_quad)
 	_spi->spi_put(reg_wr, (uint8_t *)&reg_val, NULL, nb_wr_byte);
 
 	/* Wait for completion */
-	if (_spi->spi_wait(FLASH_RDSR, FLASH_RDSR_WEL, 0x00, 10000) != 0) {
+	if (_spi->spi_wait(FLASH_RDSR, FLASH_RDSR_WIP, 0x00, 10000) != 0) {
 		printError("SPIFlash Error: failed to disable write");
 		return false;
 	}

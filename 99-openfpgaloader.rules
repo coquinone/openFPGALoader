@@ -36,6 +36,9 @@ ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6810", MODE="664", GROUP="plugdev", 
 # altera usb-blasterII - initialized
 ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6010", MODE="664", GROUP="plugdev", TAG+="uaccess"
 
+# altera usb-blasterIII
+ATTRS{idVendor}=="09fb", ATTRS{idProduct}=="6022", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
 # dirtyJTAG
 ATTRS{idVendor}=="1209", ATTRS{idProduct}=="c0ca", MODE="664", GROUP="plugdev", TAG+="uaccess"
 
@@ -51,6 +54,9 @@ ATTRS{idVendor}=="0d28", ATTRS{idProduct}=="0204", MODE="664", GROUP="plugdev", 
 # icebreaker bitsy
 ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="6146", MODE="664", GROUP="plugdev", TAG+="uaccess"
 
+# Radiona ULX3S/ULX4M (DFU)
+ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="614b", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
 # numato systems
 ATTRS{idVendor}=="2a19", ATTRS{idProduct}=="1009", MODE="644", GROUP="plugdev", TAG+="uaccess"
 
@@ -59,5 +65,8 @@ ATTRS{idVendor}=="1209", ATTRS{idProduct}=="3442", MODE="664", GROUP="plugdev", 
 
 # QinHeng Electronics USB To UART+JTAG (ch347)
 ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55dd", MODE="664", GROUP="plugdev", TAG+="uaccess"
+
+# ESP32-S3 (usb-jtag bridge)
+ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", MODE="664", GROUP="plugdev", TAG+="uaccess"
 
 LABEL="openfpgaloader_rules_end"

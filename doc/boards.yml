@@ -481,6 +481,13 @@
   Flash: AS
   Constraints: IceZumAlhambraII
 
+- ID: icepi-zero
+  Description: Icepi Zero
+  URL: https://github.com/cheyao/icepi-zero
+  FPGA: ECP5 LFE5U
+  Memory: OK
+  Flash: OK
+
 - ID: kc705
   Description: Xilinx KC705
   URL: https://www.xilinx.com/products/boards-and-kits/ek-k7-kc705-g.html
@@ -494,7 +501,7 @@
   URL: https://www.xilinx.com/products/boards-and-kits/kcu105.html
   FPGA: Kintex UltraScale xcku040-ffva1156
   Memory: OK
-  Flash: OK
+  Flash: OK (primary and secondary)
 
 - ID: kcu116
   Description: Xilinx KCU116
@@ -552,6 +559,13 @@
   Memory: OK
   Flash: OK
 
+- ID: mlk-s200-eg4d20
+  Description: MILIANKE S200 EG4D20 Development Board
+  URL: https://www.milianke.com/product-item-108.html
+  FPGA: eagle s20 EG4D20EG176
+  Memory: OK
+  Flash: OK
+
 - ID: mini_itx
   Description: Avnet Mini-ITX Base Kit
   URL: https://www.avnet.com/wps/portal/us/products/avnet-boards/avnet-board-families/mini-itx/
@@ -602,6 +616,13 @@
   FPGA: Cologne Chip GateMate Series (GM1A1)
   Memory: OK
   Flash: NT
+
+- ID: opensourceSDRLabKintex7
+  Description: Open Source SDR Lab Kintex-7 325t FPGA PCIE Development Board
+  URL: https://opensourcesdrlab.com/products/fpga-xilinx-kintex-7-xc7k325t-pcie-development-board-with-dual-gigabit-ethernet-ports-dual-10-gigabit-sfp-optical-communication
+  FPGA: Kintex7 xc7k325tffg676
+  Memory: OK
+  Flash: OK
 
 - ID: orbtrace_dfu
   Description: ORBTrace mini (dfu mode)
@@ -870,6 +891,13 @@
 - ID: ulx3s_dfu
   Description: Radiona ULX3S DFU mode
   URL: https://github.com/emard/had2019-playground
+  FPGA: ECP5 LFE5U
+  Memory: NA
+  Flash: OK
+
+- ID: ulx4m_dfu
+  Description: Radiona ULX4M LD/LS DFU mode
+  URL: https://github.com/intergalaktik/ulx4m-ls
   FPGA: ECP5 LFE5U
   Memory: NA
   Flash: OK

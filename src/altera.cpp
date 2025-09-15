@@ -31,12 +31,14 @@ Altera::Altera(Jtag *jtag, const std::string &filename,
 	const std::string &file_type, Device::prog_type_t prg_type,
 	const std::string &device_package,
 	const std::string &spiOverJtagPath, bool verify, int8_t verbose,
+	const std::string &flash_sectors,
 	bool skip_load_bridge, bool skip_reset):
 	Device(jtag, filename, file_type, verify, verbose),
 	SPIInterface(filename, verbose, 256, verify, skip_load_bridge,
 				 skip_reset),
 	_device_package(device_package), _spiOverJtagPath(spiOverJtagPath),
-	_vir_addr(0x1000), _vir_length(14), _clk_period(1)
+	_vir_addr(0x1000), _vir_length(14), _clk_period(1),
+	_flash_sectors(flash_sectors)
 {
 	/* check device family */
 	_idcode = _jtag->get_target_device_id();
@@ -321,7 +323,7 @@ struct Altera::max10_mem_t {
 const std::map<uint32_t, Altera::max10_mem_t> Altera::max10_memory_map = {
 	{0x031820dd, { // 10M08SAU
 		.check_addr0 = 0x80005,  // check_addr0
-		.dsm_addr = 0x0000, 512,  // DSM
+		.dsm_addr = 0x0000, .dsm_len = 512,  // DSM
 		.ufm_addr = 0x0200, .ufm_len = {4096, 4096},  // UFM
 		.cfm_addr = 0x2200, .cfm_len = {35840, 14848, 20992},  // CFM
 		.sectors_erase_addr = {0x17ffff, 0x27ffff, 0x37ffff, 0x47ffff, 0x57ffff}, // sectors erase address
@@ -330,7 +332,7 @@ const std::map<uint32_t, Altera::max10_mem_t> Altera::max10_memory_map = {
 	},
 	{0x031830dd, { // 10M16SA
 		.check_addr0 = 0x80009,  // check_addr0
-		.dsm_addr = 0x0000, 1024,  // DSM
+		.dsm_addr = 0x0000, .dsm_len = 1024,  // DSM
 		.ufm_addr = 0x0400, .ufm_len = {4096, 4096},  // UFM
 		.cfm_addr = 0x2400, .cfm_len = {67584, 28672, 38912},  // CFM
 		.sectors_erase_addr = {0x17ffff, 0x27ffff, 0x37ffff, 0x47ffff, 0x57ffff}, // sectors erase address
@@ -339,32 +341,51 @@ const std::map<uint32_t, Altera::max10_mem_t> Altera::max10_memory_map = {
 	},
 };
 
-/* Write an arbitrary file in UFM1 and UFM0
- * FIXME: in some mode its also possible to uses CFM2 & CFM1
+/* Write an arbitrary file in UFM1, UFM0 by default and also CFM2 and CFM1 if
+ * requested.
  */
-bool Altera::max10_program_ufm(const Altera::max10_mem_t *mem, unsigned int offset)
+bool Altera::max10_program_ufm(const Altera::max10_mem_t *mem, uint32_t offset,
+		uint8_t update_sectors)
 {
+	uint32_t start_addr = 0; // 32bit align
+	uint32_t end_addr = 0; // 32bit align
+	uint8_t erase_sectors_mask;
+
+	/* check CFM0 is not mentionned */
+	if (update_sectors & (1 << 4))
+		std::runtime_error("Error: CFM0 cant't be used to store User Binary");
+
+	/* First task: search for the first and the last sector to use */
+	sectors_mask_start_end_addr(mem, update_sectors,
+		&start_addr, &end_addr, &erase_sectors_mask);
+
 	RawParser _bit(_filename, true);
 	_bit.parse();
-	_bit.displayHeader();
+	if (_verbose)
+		_bit.displayHeader();
+
 	const uint8_t *data = _bit.getData();
 	const uint32_t length = _bit.getLength() / 8;
-	const uint32_t base_addr = mem->ufm_addr + offset;
+	const uint32_t base_addr = start_addr + offset / 4; // 32bit align
+	const uint32_t flash_len = (end_addr - base_addr) * 4; // Byte align
+
+	/* check */
+	if (base_addr > end_addr) { // wrong offset
+		printError("Error: start offset is out of xFM region");
+		return false;
+	}
+	if (flash_len < length) { // too big file
+		printError("Error: no enough space to write\n");
+		return false;
+	}
+	if (base_addr + (length / 4) > end_addr) {
+		printError("Error: end address is out of xFM region");
+		return false;
+	}
 
 	uint8_t *buff = (uint8_t *)malloc(length);
 	if (!buff) {
 		printError("max10_program_ufm: Failed to allocate buffer");
-		return false;
-	}
-
-	/* check */
-	const uint32_t ufmx_len = 4 * (mem->ufm_len[0] + mem->ufm_len[1]);
-	if (base_addr > length) {
-		printError("Error: start offset is out of UFM region");
-		return false;
-	}
-	if (base_addr + length > ufmx_len) {
-		printError("Error: end address is out of UFM region");
 		return false;
 	}
 
@@ -375,18 +396,23 @@ bool Altera::max10_program_ufm(const Altera::max10_mem_t *mem, unsigned int offs
 		}
 	}
 
+	printf("%x %x %x %x\n", update_sectors, erase_sectors_mask,
+		base_addr, end_addr);
+
 	// Start!
 	max10_flow_enable();
 
-	/* Erase UFM1 & UFM0 */
-	printInfo("Erase UFM ", false);
-	max10_flow_erase(mem, 0x3);
+	/* Erase xFM sectors */
+	printInfo("Erase xFM ", false);
+	max10_flow_erase(mem, erase_sectors_mask);
 	printInfo("Done");
 
-	/* Program UFM1 & UFM0 */
+	/* Program xFM */
 	// Simplify code:
-	// UFM0 follows UFM1, so we don't need to iterate
-	printInfo("Write UFM");
+	// UFM0 follows UFM1,
+	// CFM2 follow UFM0, etc...
+	// so we don't need to iterate
+	printInfo("Write xFM");
 	writeXFM(buff, base_addr, 0, length / 4);
 
 	/* Verify */
@@ -403,6 +429,7 @@ bool Altera::max10_program_ufm(const Altera::max10_mem_t *mem, unsigned int offs
 void Altera::max10_program(unsigned int offset)
 {
 	uint32_t base_addr;
+	uint8_t update_sectors;
 
 	/* Needs to have some specifics informations about internal flash size/organisation
 	 * and some magics.
@@ -414,8 +441,12 @@ void Altera::max10_program(unsigned int offset)
 	}
 	const Altera::max10_mem_t mem = mem_map->second;
 
+	/* Check for a full update or only for a subset */
+	update_sectors = max10_flash_sectors_to_mask(_flash_sectors);
+
 	if (_file_extension != "pof") {
-		max10_program_ufm(&mem, offset);
+		max10_program_ufm(&mem, offset,
+			(_flash_sectors.size() == 0) ? 0 : update_sectors);
 		return;
 	}
 
@@ -468,10 +499,10 @@ void Altera::max10_program(unsigned int offset)
 
 	// UFM Mapping
 	ufm_data[1] = _bit.getData("UFM");
-	ufm_data[0] = &ufm_data[1][mem.ufm_len[0] * 4];  // Just after UFM1 (but size may differs
+	ufm_data[0] = &ufm_data[1][mem.ufm_len[1] * 4];  // Just after UFM1 (but size may differs
 
 	// CFM Mapping
-	cfm_data[2] = &ufm_data[0][mem.ufm_len[1] * 4];  // First CFM section in FPGA internal flash
+	cfm_data[2] = &ufm_data[0][mem.ufm_len[0] * 4];  // First CFM section in FPGA internal flash
 	cfm_data[1] = &cfm_data[2][mem.cfm_len[2] * 4];  // Second CFM section but just after CFM2
 	cfm_data[0] = &cfm_data[1][mem.cfm_len[1] * 4];  // last CFM section but just after CFM1
 
@@ -482,24 +513,29 @@ void Altera::max10_program(unsigned int offset)
 	// Start!
 	max10_flow_enable();
 
-	max10_flow_erase(&mem, 0x1F);
-	max10_dsm_verify();
+	max10_flow_erase(&mem, update_sectors);
+	if (update_sectors == 0x1f)
+		max10_dsm_verify();
 
 	/* Write */
 
 	// UFM 1 -> 0
 	base_addr = mem.ufm_addr;
 	for (int i = 1; i >= 0; i--) {
-		printInfo("Write UFM" + std::to_string(i));
-		writeXFM(ufm_data[i], base_addr, 0, mem.ufm_len[i]);
+		if (update_sectors & (1 << i)) {
+			printInfo("Write UFM" + std::to_string(i));
+			writeXFM(ufm_data[i], base_addr, 0, mem.ufm_len[i]);
+		}
 		base_addr += mem.ufm_len[i];
 	}
 
 	// CFM2 -> 0
 	base_addr = mem.cfm_addr;
 	for (int i = 2; i >= 0; i--) {
-		printInfo("Write CFM" + std::to_string(i));
-		writeXFM(cfm_data[i], base_addr, 0, mem.cfm_len[i]);
+		if (update_sectors & (1 << ((2 - i) + 2))) {
+			printInfo("Write CFM" + std::to_string(i));
+			writeXFM(cfm_data[i], base_addr, 0, mem.cfm_len[i]);
+		}
 		base_addr += mem.cfm_len[i];
 	}
 
@@ -508,29 +544,35 @@ void Altera::max10_program(unsigned int offset)
 		// UFM 1 -> 0
 		base_addr = mem.ufm_addr;
 		for (int i = 1; i >= 0; i--) {
-			printInfo("Verify UFM" + std::to_string(i));
-			verifyxFM(ufm_data[i], base_addr, 0, mem.ufm_len[i]);
+			if (update_sectors & (1 << i)) {
+				printInfo("Verify UFM" + std::to_string(i));
+				verifyxFM(ufm_data[i], base_addr, 0, mem.ufm_len[i]);
+			}
 			base_addr += mem.ufm_len[i];
 		}
 
 		// CFM2->0
 		base_addr = mem.cfm_addr;
 		for (int i = 2; i >= 0; i--) {
-			printInfo("Verify CFM" + std::to_string(i));
-			verifyxFM(cfm_data[i], base_addr, 0, mem.cfm_len[i]);
+			if (update_sectors & (1 << ((2 - i) + 2))) {
+				printInfo("Verify CFM" + std::to_string(i));
+				verifyxFM(cfm_data[i], base_addr, 0, mem.cfm_len[i]);
+			}
 			base_addr += mem.cfm_len[i];
 		}
 	}
 
 	// DSM
 
-	max10_dsm_program(dsm_data, dsm_len);
-	max10_dsm_verify();
+	if (update_sectors == 0x1F) {
+		max10_dsm_program(dsm_data, dsm_len);
+		max10_dsm_verify();
 
-	max10_flow_program_donebit(mem.done_bit_addr);
-	max10_dsm_verify();
-	max10_dsm_program_success(mem.pgm_success_addr);
-	max10_dsm_verify();
+		max10_flow_program_donebit(mem.done_bit_addr);
+		max10_dsm_verify();
+		max10_dsm_program_success(mem.pgm_success_addr);
+		max10_dsm_verify();
+	}
 
 	/* disable ISC flow */
 	max10_flow_disable();
@@ -874,6 +916,79 @@ bool Altera::max10_dump()
 	max10_flow_disable();
 
 	fclose(fd);
+	return true;
+}
+
+uint8_t Altera::max10_flash_sectors_to_mask(std::string flash_sectors)
+{
+	uint8_t mask = 0;
+
+	if (flash_sectors.size() > 0) {
+		const std::vector<std::string> sectors = splitString(flash_sectors, ',');
+		for (const auto &sector: sectors) {
+			if (sector == "UFM1")
+				mask |= (1 << 0);
+			else if (sector == "UFM0")
+				mask |= (1 << 1);
+			else if (sector == "CFM2")
+				mask |= (1 << 2);
+			else if (sector == "CFM1")
+				mask |= (1 << 3);
+			else if (sector == "CFM0")
+				mask |= (1 << 4);
+			else
+				throw std::runtime_error("Unknown sector " + sector);
+		}
+	} else { // full update
+		mask = 0x1F;
+	}
+
+	return mask;
+}
+
+bool Altera::sectors_mask_start_end_addr(const Altera::max10_mem_t *mem,
+	const uint8_t update_sectors, uint32_t *start, uint32_t *end,
+	uint8_t *sectors_mask)
+{
+	uint32_t saddr = mem->ufm_addr;
+	uint32_t eaddr = saddr;
+	uint8_t start_bit = 0, end_bit = 0;
+	/* For sake of simplicity: create an array with all length aligned
+	 * as it in MAX10 devices
+	 */
+	const uint32_t mem_map_length[] = {
+		mem->ufm_len[1], mem->ufm_len[0],
+		mem->cfm_len[2], mem->cfm_len[1]
+	};
+
+	if (update_sectors == 0) {
+		eaddr = mem->ufm_addr + (mem->ufm_len[0] + mem->ufm_len[1]);
+		*sectors_mask = 0x3;
+	} else {
+		/* eaddr start with full memory size */
+		for (uint8_t i = 0; i < 4; i++)
+			eaddr += mem_map_length[i];
+		/* search first bit == 1 and increment start address */
+		for (uint8_t i = 0; i < 4; i++) {
+			if (update_sectors & (1 << i)) {
+				start_bit = i;
+				break;
+			}
+			saddr += mem_map_length[i];
+		}
+
+		/* decrement eaddr until last bit == 1 found */
+		for (int8_t i = 3; i >= 0; i--) {
+			if (update_sectors & (1 << i)) {
+				end_bit = i + 1;
+				break;
+			}
+			eaddr -= mem_map_length[i];
+		}
+		*sectors_mask = ((1 << end_bit) - 1) - ((1 << start_bit) - 1);
+	}
+	*start = saddr;
+	*end = eaddr;
 	return true;
 }
 

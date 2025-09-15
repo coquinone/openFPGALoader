@@ -161,6 +161,7 @@ bool CologneChip::post_flash_access()
 		_ftdi_jtag->gpio_set(_oen_pin);
 	}
 	usleep(SLEEP_US);
+	reset();
 
 	return true;
 }
@@ -210,6 +211,30 @@ bool CologneChip::dumpFlash(uint32_t base_addr, uint32_t len)
 	}
 
 	return post_flash_access();
+}
+
+/**
+ * Set QE bit, if available. Works in both SPI and JTAG-SPI-bypass mode.
+ */
+bool CologneChip::set_quad_bit(bool set_quad)
+{
+	if (!SPIInterface::set_quad_bit(set_quad)) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Peform bulk erase. Works in both SPI and JTAG-SPI-bypass mode.
+ */
+bool CologneChip::bulk_erase_flash()
+{
+	if (!SPIInterface::bulk_erase_flash()) {
+		return false;
+	}
+
+	return true;
 }
 
 /**
@@ -323,25 +348,14 @@ void CologneChip::programJTAG_sram(const uint8_t *data, int length)
 
 	ProgressBar progress("Load SRAM via JTAG", length, 50, _quiet);
 
-	/* make sure to only send multiples of 8 bits */
-	int bits_before = _jtag->get_devices_list().size() - _jtag->get_device_index() - 1;
-	if (bits_before > 0) {
-		int n = 8 - (bits_before % 8);
-		uint8_t tx[n];
-		memset(tx, 0x00, n);
-		_jtag->shiftDR(tx, NULL, n, Jtag::SHIFT_DR);
-	}
-
 	/* the bypass register defaults to '0'.
 	 * in order to generate a proper 'nop' command (0x00, 0xFF), send a
 	 * sequence of zeros instead of ones.
 	 */
-	int bits_after = _jtag->get_device_index();
-	if (bits_after > 0) {
-		int n = (bits_after + 7) / 8;
-		uint8_t tx[n];
-		memset(tx, 0x00, n);
-		_jtag->shiftDR(tx, NULL, 8-bits_after, Jtag::SHIFT_DR);
+	if (_jtag->get_devices_list().size() > 1) {
+		int bits_before = 8 - (_jtag->get_device_index() % 8);
+		_jtag->set_state(Jtag::SHIFT_DR, 0);
+		_jtag->toggleClk(bits_before, 0);
 	}
 
 	Jtag::tapState_t next_state = Jtag::SHIFT_DR;
@@ -383,9 +397,7 @@ void CologneChip::programJTAG_flash(unsigned int offset, const uint8_t *data,
 	if (_verify)
 		flash.verify(offset, data, length);
 
-	if (_ftdi_jtag) {
-		_ftdi_jtag->gpio_set(_oen_pin);
-	}
+	post_flash_access();
 }
 
 /**
@@ -462,15 +474,10 @@ int CologneChip::spi_wait(uint8_t cmd, uint8_t mask, uint8_t cond,
 	_jtag->read_write(&tx, NULL, 8, 0);
 
 	do {
-		if (count == 0) {
-			_jtag->read_write(dummy, rx, 16, 0);
-			uint8_t b0 = ConfigBitstreamParser::reverseByte(rx[0]);
-			uint8_t b1 = ConfigBitstreamParser::reverseByte(rx[1]);
-			tmp = (b0 << 1) | ((b1 >> 7) & 0x01);
-		} else {
-			_jtag->read_write(dummy, rx, 8, 0);
-			tmp = ConfigBitstreamParser::reverseByte(rx[0]);
-		}
+		_jtag->read_write(dummy, rx, 16, 0);
+		uint8_t b0 = ConfigBitstreamParser::reverseByte(rx[0]);
+		uint8_t b1 = ConfigBitstreamParser::reverseByte(rx[1]);
+		tmp = (b0 << 1) | ((b1 >> 7) & 0x01);
 
 		count++;
 		if (count == timeout) {

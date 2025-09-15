@@ -22,6 +22,7 @@ class Altera: public Device, SPIInterface {
 				const std::string &device_package,
 				const std::string &spiOverJtagPath,
 				bool verify, int8_t verbose,
+				const std::string &flash_sectors,
 				bool skip_load_bridge, bool skip_reset);
 		~Altera();
 
@@ -96,13 +97,16 @@ class Altera: public Device, SPIInterface {
 		/*************************/
 		/*     max10 specific    */
 		/*************************/
+public:
 		struct max10_mem_t;
+private:
 		static const std::map<uint32_t, Altera::max10_mem_t> max10_memory_map;
 
 		/* Write a full POF file, or updates UFM with an arbitrary binary file */
 		void max10_program(uint32_t offset);
 		/* Write something in UFMx sections after erase */
-		bool max10_program_ufm(const max10_mem_t *mem, uint32_t offset);
+		bool max10_program_ufm(const max10_mem_t *mem, uint32_t offset,
+			uint8_t update_sectors);
 		/* Write len Word from cfg_data at a specific address */
 		void writeXFM(const uint8_t *cfg_data, uint32_t base_addr, uint32_t offset, uint32_t len);
 		/* Compare cfg_data with data stored at base_addr */
@@ -119,7 +123,13 @@ class Altera: public Device, SPIInterface {
 		bool max10_dsm_verify();
 		bool max10_dump();
 		bool max10_read_section(FILE *fd, const uint32_t base_addr, const uint32_t addr);
-
+		/* Utils methods */
+public:
+		static uint8_t max10_flash_sectors_to_mask(std::string flash_sectors);
+		static bool sectors_mask_start_end_addr(const Altera::max10_mem_t *mem,
+			const uint8_t update_sectors, uint32_t *start, uint32_t *end,
+			uint8_t *sectors_mask);
+private:
 		/*!
 		 * \brief with intel devices SPI flash direct access is not possible
 		 * 		so a bridge must be loaded in RAM to access flash
@@ -152,6 +162,7 @@ class Altera: public Device, SPIInterface {
 
 		altera_family_t _fpga_family;
 		uint32_t _idcode;
+		std::string _flash_sectors; /**< MAX10 Only: list of sectors to erase/write */
 };
 
 #endif  // SRC_ALTERA_HPP_
