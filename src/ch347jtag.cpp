@@ -29,7 +29,8 @@ using namespace std;
 #define CH347T_JTAG_PID 0x55dd    //ch347T
 #define CH347F_JTAG_PID 0x55de    //ch347F
 
-#define CH347JTAG_INTF        2
+#define CH347T_JTAG_INTF        2
+#define CH347F_JTAG_INTF        4
 #define CH347JTAG_WRITE_EP    0x06
 #define CH347JTAG_READ_EP     0x86
 
@@ -315,7 +316,12 @@ CH347Jtag::CH347Jtag(uint32_t clkHZ, int8_t verbose, int vid, int pid, uint8_t b
 		printError("libusb error wrile setting auto-detach of kernel driver");
 		goto usb_exit;
 	}
-	if (libusb_claim_interface(dev_handle, CH347JTAG_INTF)) {
+	if (pid == CH347F_JTAG_PID) {
+		interface = CH347F_JTAG_INTF;
+	} else {
+		interface = CH347T_JTAG_INTF
+	}
+	if (libusb_claim_interface(dev_handle, interface)) {
 		printError("libusb error while claiming CH347JTAG interface");
 		goto usb_close;
 	}
@@ -330,7 +336,7 @@ CH347Jtag::CH347Jtag(uint32_t clkHZ, int8_t verbose, int vid, int pid, uint8_t b
 	_setClkFreq(clkHZ);
 	return;
 usb_release:
-	libusb_release_interface(dev_handle, CH347JTAG_INTF);
+	libusb_release_interface(dev_handle, interface);
 usb_close:
 	libusb_close(dev_handle);
 usb_exit:
@@ -345,7 +351,7 @@ CH347Jtag::~CH347Jtag()
 	if (wtrans) libusb_free_transfer(wtrans);
 
 	if (dev_handle) {
-		libusb_release_interface(dev_handle, CH347JTAG_INTF);
+		libusb_release_interface(dev_handle, interface);
 		libusb_close(dev_handle);
 		dev_handle = 0;
 	}
