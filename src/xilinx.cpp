@@ -365,9 +365,6 @@ Xilinx::Xilinx(Jtag *jtag, const std::string &filename,
 		_ircode_map = ircode_mapping.at("virtexusp");
 	} else if (family.substr(0, 8) == "spartan3") {
 		_fpga_family = SPARTAN3_FAMILY;
-		if (_mode != Device::MEM_MODE) {
-			throw std::runtime_error("Error: Only load to mem is supported");
-		}
 	} else if (family == "xcf") {
 		_fpga_family = XCF_FAMILY;
 		if (_mode == Device::MEM_MODE) {
@@ -715,11 +712,11 @@ bool Xilinx::load_bridge()
 	bitname = PathHelper::absolutePath(bitname);
 #endif
 
-	std::cout << "use: " << bitname << std::endl;
-
 	/* first: load spi over jtag */
 	try {
 		BitParser bridge(bitname, true, _verbose);
+		printSuccess("Use: " + bridge.getFilename());
+
 		bridge.parse();
 		if (_fpga_family == SPARTAN3_FAMILY)
 			xc3s_flow_program(&bridge);
